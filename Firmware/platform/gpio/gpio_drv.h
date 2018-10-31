@@ -24,9 +24,5 @@ typedef enum{
 void gpio_drv_init(void);
 void gpio_value_set(u8 src);
 void gpio_value_reset(u8 src);
-//void rx_gpio_init(void);
-//void tx_gpio_init(void);
-
-
 
 #endif
