@@ -91,28 +91,17 @@ STATIC void app_datalink_task(void *p_arg)
 
 	(void)p_arg;
 
-	//systemState = SYSTEM_INIT;
-
-	//datalink.index = 1;
-	//datalink.connected_time=0;
-	//datalink.link_connected=FALSE;
-	//datalink.linked = FALSE;
-	//datalink.protected = FALSE;
-
-	//systemState = SYSTEM_FLYING;
+	datalink_init(0);
 
 	while (DEF_TRUE) 
     {   
-    	//LED_W_ON;
-    	//OSTimeDlyHMSM(0, 0, 0, 300, OS_OPT_TIME_HMSM_STRICT, &err);
-		//LED_W_OFF;
 		LED_B_OFF;
 		if(datalink_received())
 		{
 			data_unpack();
 		}
 
-		//handler_protected();
+		handler_protected();
 		
 		OSTimeDlyHMSM(0, 0, 0, 10, OS_OPT_TIME_HMSM_STRICT, &err);
     }
@@ -151,6 +140,7 @@ STATIC void app_task_create(void)
                  (OS_ERR       *)&err);
 #endif
 
+
 	OSTaskCreate((OS_TCB	   *)&app_uart_task_tcb,			  
 				 (CPU_CHAR	   *)"App uart Task",
 				 (OS_TASK_PTR	)app_uart_task, 
@@ -164,6 +154,7 @@ STATIC void app_task_create(void)
 				 (void		   *)0,
 				 (OS_OPT		)(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
 				 (OS_ERR	   *)&err);
+#if 1
 
 	OSTaskCreate((OS_TCB	   *)&app_datalink_task_tcb,			  
 				 (CPU_CHAR	   *)"App datalink Task",
@@ -178,7 +169,8 @@ STATIC void app_task_create(void)
 				 (void		   *)0,
 				 (OS_OPT		)(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
 				 (OS_ERR	   *)&err);
-#if 1
+#endif
+
 	OSTaskCreate((OS_TCB	   *)&app_rssi_task_tcb,			  
 				 (CPU_CHAR	   *)"App rssi Task",
 				 (OS_TASK_PTR	)app_rssi_task, 
@@ -192,7 +184,7 @@ STATIC void app_task_create(void)
 				 (void		   *)0,
 				 (OS_OPT		)(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
 				 (OS_ERR	   *)&err);
-#endif
+
 
 
 }
@@ -239,10 +231,12 @@ STATIC void app_task_start(void *p_arg)
     {   
         //tc_run_all();
         //MSG("----------------loop-----------------\r\n");
-        LED_B_ON;
-		OSTimeDlyHMSM(0, 0, 0, 200, OS_OPT_TIME_HMSM_STRICT, &err);
-		LED_B_OFF;
-		OSTimeDlyHMSM(0, 0, 0, 200, OS_OPT_TIME_HMSM_STRICT, &err);
+        //LED_B_ON;
+		//OSTimeDlyHMSM(0, 0, 0, 200, OS_OPT_TIME_HMSM_STRICT, &err);
+		//LED_B_OFF;
+		LED_R_TOGGLE;
+		datalink_state();
+		OSTimeDlyHMSM(0, 0, 0, 100, OS_OPT_TIME_HMSM_STRICT, &err);
     }
 }
 

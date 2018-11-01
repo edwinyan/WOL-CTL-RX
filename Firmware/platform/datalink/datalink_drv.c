@@ -12,9 +12,40 @@ static u8 csq_cmd[]="AT*CSQ?\r\n";
 static u8 pack[14]={0};
 static u8 button_output[13] = {0};
 
+#define PWM_DEFAULT_VALUE	2048
+
 dataLink_t datalink;
 
 extern FIFO_T stFiFo;
+
+enum SystemState systemState;
+
+void datalink_init(u8 index)
+{
+	u8 i=0;
+
+	systemState = SYSTEM_INIT;
+	
+	datalink.index = index;
+	datalink.link_connected = FALSE;
+	datalink.linked = FALSE;
+	datalink.protected = FALSE;
+	datalink.hover_set = FALSE;
+	datalink.hover_state = FALSE;
+	datalink.returned = FALSE;
+	datalink.connected_time = 0;
+	datalink.hover_time = 0;
+	datalink.connected_tick = 0;
+	datalink.hover_recovery = 0;
+	datalink.back_recovery = 0;
+	
+	for(i=0;i<4;i++)
+	{
+		datalink.hover_pwm_value[i] = PWM_DEFAULT_VALUE;
+	}
+
+	systemState = SYSTEM_FLYING;
+}
 
 void get_rssi(void)
 {
@@ -165,3 +196,100 @@ void data_unpack(void)
 	}
 }
 
+void handler_protected(void)
+{
+	switch(systemState)
+	{
+		case SYSTEM_FLYING:
+			if(datalink.protected)		//触发了失控保护
+			{
+				systemState = SYSTEM_HOVER;
+				MSG("enter hover state\r\n");
+			}
+			break;
+		case SYSTEM_HOVER:
+			if(datalink.hover_state == FALSE)
+			{
+				datalink.hover_state=TRUE;
+				datalink.hover_time = datalink.connected_tick + 6000;	//设置悬停时间
+				//设置摇杆中位值，保持悬停状态
+				TIM_SetCompare1(TIM3,datalink.hover_pwm_value[0]);
+				TIM_SetCompare2(TIM3,datalink.hover_pwm_value[1]);
+				TIM_SetCompare3(TIM3,datalink.hover_pwm_value[2]);
+				TIM_SetCompare4(TIM3,datalink.hover_pwm_value[3]);
+				MSG("linkquality too bad,hover the craft for 1 min\r\n");
+			}else{
+				if(datalink.hover_time < datalink.connected_tick)	//等待时间结束
+				{
+					systemState = SYSTEM_BACK;
+					datalink.hover_state =FALSE;
+					MSG("hover action done,go to back action\r\n");
+				}
+				//BSP_OS_TimeDly(100);
+				//数据链路从悬停状态下恢复
+				if(datalink.protected == FALSE)
+				{
+					datalink.hover_recovery++;
+					if(datalink.hover_recovery > 33)	//恢复链路1s
+					{
+						//数据链路恢复稳定，切换到正常飞行模式
+						systemState = SYSTEM_FLYING;
+						//清除标志位
+						datalink.hover_state =FALSE;
+						datalink.hover_time =0;
+						datalink.hover_recovery=0;
+						MSG("recovery from hover to flying state\r\n");
+					}
+				}else{
+					datalink.hover_recovery =0;
+				}					
+				//MSG("wait for hover action done\r\n");
+				
+				
+			}
+			break;
+		case SYSTEM_BACK:
+			if(datalink.returned == FALSE)
+			{
+				datalink.returned =TRUE;
+				MSG("linkquality too bad,do return action\r\n");
+				//do_return_action();		//产生返航动作
+			}else{
+				if(datalink.protected == FALSE)
+				{
+					datalink.back_recovery++;
+					if(datalink.back_recovery > 33)	//稳定恢复链路1s
+					{
+						//数据链路恢复稳定，切换到正常飞行模式
+						systemState = SYSTEM_FLYING;
+						datalink.returned =FALSE;
+						datalink.back_recovery =0;
+						MSG("recovery from back to flying state\r\n");
+					}
+				}else{
+					datalink.back_recovery =0;
+				}
+			}
+			break;
+		default:
+			break;
+	}
+}
+
+void datalink_state(void)
+{
+	if(datalink.connected_time < datalink.connected_tick && datalink.link_connected){
+		datalink.link_connected = FALSE;
+		//MSG("disconnected step1\r\n");
+	}
+	if(datalink.link_connected == FALSE && datalink.linked){
+		//500ms没有收到数据包，触发失控保护
+		datalink.protected = TRUE;
+		//MSG("disconnected step2\r\n");
+	}
+	if(datalink.protected && datalink.link_connected){
+		datalink.protected = FALSE;
+		//MSG("disconnected recovery\r\n");
+	}
+	datalink.connected_tick++;
+}

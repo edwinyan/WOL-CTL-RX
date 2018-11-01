@@ -24,6 +24,13 @@
 //platform
 #include "stm32f4xx.h"
 
+enum SystemState{
+	SYSTEM_INIT=0,		//³õÊ¼»¯×´Ì¬
+	SYSTEM_FLYING,		//·ÉÐÐ×´Ì¬
+	SYSTEM_HOVER,		//ÐüÍ£×´Ì¬
+	SYSTEM_BACK,		//·µº½×´Ì¬
+	SYSTEM_ERROR		//´íÎó×´Ì¬
+};
 
 
 //misc

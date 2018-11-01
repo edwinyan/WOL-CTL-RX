@@ -36,9 +36,11 @@ typedef struct {
 #define RETURN_LED			0x01
 #define POWER_LED			0x02
 
-
+void datalink_init(u8 index);
 void data_unpack(void);
 bool datalink_received(void);
 void get_rssi(void);
+void datalink_state(void);
+void handler_protected(void);
 
 #endif
