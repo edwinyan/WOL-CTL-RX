@@ -11,18 +11,18 @@ OS_MUTEX	RX_MUTEX;		//uart rx mutex
 
 OS_MUTEX	FIFO_MUTEX;
 
-FIFO_T stFiFo;
+//FIFO_T stFiFo;
 
 /*----------------------------------------------------------------------------*/
 //macro and variables
 #define  APP_CFG_TASK_START_STK_SIZE			256u
 #define  APP_CFG_TASK_START_PRIO				2u
 
-#define  APP_TX_TASK_STK_SIZE					256u
-#define  APP_TX_TASK_PRIO                       3u
+#define  APP_RX_TASK_STK_SIZE					256u
+#define  APP_RX_TASK_PRIO                       3u
 
-#define  APP_UART_TASK_STK_SIZE                 256u
-#define  APP_UART_TASK_PRIO                     4u
+//#define  APP_UART_TASK_STK_SIZE                 256u
+//#define  APP_UART_TASK_PRIO                     4u
 
 #define  APP_DATALINK_TASK_STK_SIZE             256u
 #define  APP_DATALINK_TASK_PRIO                 5u
@@ -33,11 +33,11 @@ FIFO_T stFiFo;
 static  OS_TCB   app_task_start_tcb;
 static  CPU_STK  app_task_start_stk[APP_CFG_TASK_START_STK_SIZE];
 
-static  OS_TCB   app_tx_task_tcb;
-static  CPU_STK  app_tx_task_stk[APP_TX_TASK_STK_SIZE];
+static  OS_TCB   app_rx_task_tcb;
+static  CPU_STK  app_rx_task_stk[APP_RX_TASK_STK_SIZE];
 
-static  OS_TCB   app_uart_task_tcb;
-static  CPU_STK  app_uart_task_stk[APP_UART_TASK_STK_SIZE];
+//static  OS_TCB   app_uart_task_tcb;
+//static  CPU_STK  app_uart_task_stk[APP_UART_TASK_STK_SIZE];
 
 static  OS_TCB   app_datalink_task_tcb;
 static  CPU_STK  app_datalink_task_stk[APP_DATALINK_TASK_STK_SIZE];
@@ -47,7 +47,7 @@ static  CPU_STK  app_rssi_task_stk[APP_RSSI_TASK_STK_SIZE];
 
 /*----------------------------------------------------------------------------*/
 //local function
-STATIC void app_rfm_tx_task(void *p_arg)
+STATIC void app_rfm_rx_task(void *p_arg)
 {
 	OS_ERR      err;
 
@@ -60,7 +60,7 @@ STATIC void app_rfm_tx_task(void *p_arg)
 		OSTimeDlyHMSM(0, 0, 1, 0, OS_OPT_TIME_HMSM_STRICT, &err);
     }
 }
-
+#if 0
 STATIC void app_uart_task(void *p_arg)
 {
 	OS_ERR      err;
@@ -84,6 +84,7 @@ STATIC void app_uart_task(void *p_arg)
 		OSTimeDlyHMSM(0, 0, 0, 3, OS_OPT_TIME_HMSM_STRICT, &err);
     }
 }
+#endif
 
 STATIC void app_datalink_task(void *p_arg)
 {
@@ -125,14 +126,14 @@ STATIC void app_task_create(void)
 
 	OS_ERR      err;
 #if 1	
-    OSTaskCreate((OS_TCB       *)&app_tx_task_tcb,              
-                 (CPU_CHAR     *)"App rmf tx Task",
-                 (OS_TASK_PTR   )app_rfm_tx_task, 
+    OSTaskCreate((OS_TCB       *)&app_rx_task_tcb,              
+                 (CPU_CHAR     *)"App rmf rx Task",
+                 (OS_TASK_PTR   )app_rfm_rx_task, 
                  (void         *)0,
-                 (OS_PRIO       )APP_TX_TASK_PRIO,
-                 (CPU_STK      *)&app_tx_task_stk[0],
-                 (CPU_STK_SIZE  )app_tx_task_stk[APP_TX_TASK_STK_SIZE / 10],
-                 (CPU_STK_SIZE  )APP_TX_TASK_STK_SIZE,
+                 (OS_PRIO       )APP_RX_TASK_PRIO,
+                 (CPU_STK      *)&app_rx_task_stk[0],
+                 (CPU_STK_SIZE  )app_rx_task_stk[APP_RX_TASK_STK_SIZE / 10],
+                 (CPU_STK_SIZE  )APP_RX_TASK_STK_SIZE,
                  (OS_MSG_QTY    )0,
                  (OS_TICK       )0,
                  (void         *)0,
@@ -140,7 +141,7 @@ STATIC void app_task_create(void)
                  (OS_ERR       *)&err);
 #endif
 
-
+#if 0
 	OSTaskCreate((OS_TCB	   *)&app_uart_task_tcb,			  
 				 (CPU_CHAR	   *)"App uart Task",
 				 (OS_TASK_PTR	)app_uart_task, 
@@ -154,6 +155,7 @@ STATIC void app_task_create(void)
 				 (void		   *)0,
 				 (OS_OPT		)(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
 				 (OS_ERR	   *)&err);
+#endif
 #if 1
 
 	OSTaskCreate((OS_TCB	   *)&app_datalink_task_tcb,			  

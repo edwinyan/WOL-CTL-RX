@@ -9,14 +9,16 @@
 #include "pwm_drv.h"
 
 static u8 csq_cmd[]="AT*CSQ?\r\n";
-static u8 pack[14]={0};
+static u8 pack[16]={0};
 static u8 button_output[13] = {0};
+
+u8 module_index=0;
 
 #define PWM_DEFAULT_VALUE	2048
 
 dataLink_t datalink;
 
-extern FIFO_T stFiFo;
+extern FIFO_T stFiFo3;
 
 enum SystemState systemState;
 
@@ -98,30 +100,28 @@ bool datalink_received(void)
 	bool ret= FALSE;
 	u8 csq_value[10]="RSSI=";
 
-	if(Fifo_DataLen(&stFiFo) >= 16)
+	if(Fifo_DataLen(&stFiFo3) >= 18)
 	{
-		if(Fifo_Read(&stFiFo,&read) == TRUE && read == 0xAA)
+		if(Fifo_Read(&stFiFo3,&read) == TRUE && read == 0xAA)
 		{
-			for(position=0;position<14;position++)//提取数据段
+			for(position=0;position<16;position++)//提取数据段
 			{
-				Fifo_Read(&stFiFo,&temp);
-				if(temp == 0xF5)
-					temp = 0x0A;
+				Fifo_Read(&stFiFo3,&temp);
 				pack[position] = temp;	//接收到完整数据
 				MSG("0x%x,",pack[position]);
 			}
-			MSG("\r\n");
-			if(Fifo_Read(&stFiFo,&read) == TRUE && read == 0x55)
+			//MSG("\r\n");
+			if(Fifo_Read(&stFiFo3,&read) == TRUE && read == 0x55)
 				ret=TRUE;
 		}else if(read == '+'){
-			if(Fifo_Read(&stFiFo,&read) == TRUE && read == 'C'){
-				if(Fifo_Read(&stFiFo,&read) == TRUE && read == 'S'){
-					if(Fifo_Read(&stFiFo,&read) == TRUE && read == 'Q'){
-						if(Fifo_Read(&stFiFo,&read) == TRUE && read == ':'){
+			if(Fifo_Read(&stFiFo3,&read) == TRUE && read == 'C'){
+				if(Fifo_Read(&stFiFo3,&read) == TRUE && read == 'S'){
+					if(Fifo_Read(&stFiFo3,&read) == TRUE && read == 'Q'){
+						if(Fifo_Read(&stFiFo3,&read) == TRUE && read == ':'){
 							//MSG("we got a rssi value\r\n");
-							if(Fifo_Read(&stFiFo,&read) == TRUE)
+							if(Fifo_Read(&stFiFo3,&read) == TRUE)
 								csq_value[5] = read;
-							if(Fifo_Read(&stFiFo,&read) == TRUE && read >= '0' && read <= '9'){
+							if(Fifo_Read(&stFiFo3,&read) == TRUE && read >= '0' && read <= '9'){
 								csq_value[6] = read;
 							}
 							//send rssi value(RSSI=xx) to transmitter
@@ -154,16 +154,16 @@ void data_unpack(void)
 {
 	u16 pwm[5] = {0};
 	
-	if(pack[13] == checkSum(pack,13))
+	if(pack[15] == checkSum(pack,15))
 	{
 		//MSG("we got a correct packet\r\n");
-		//if(hover_set == FALSE)
+		pack[13] = module_index;
 		if(datalink.link_connected == FALSE)
 			datalink.link_connected = TRUE;
 		if(datalink.linked == FALSE)
 			datalink.linked = TRUE;
 		//get timeout stamp
-		datalink.connected_time = datalink.connected_tick +10;
+		datalink.connected_time = datalink.connected_tick +15;
 		
 		pwm[PWM_CHANNEL_CAMERA] = (pack[0]<<8) + pack[1];
 		pwm[PWM_CHANNEL_JS_R1] = (pack[2]<<8) + pack[3];
