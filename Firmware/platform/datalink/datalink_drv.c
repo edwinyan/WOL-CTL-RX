@@ -108,7 +108,7 @@ bool datalink_received(void)
 			{
 				Fifo_Read(&stFiFo3,&temp);
 				pack[position] = temp;	//接收到完整数据
-				MSG("0x%x,",pack[position]);
+				//MSG("0x%x,",pack[position]);
 			}
 			//MSG("\r\n");
 			if(Fifo_Read(&stFiFo3,&read) == TRUE && read == 0x55)
@@ -181,7 +181,7 @@ void data_unpack(void)
 			datalink.hover_set=TRUE;
 		}
 
-		//MSG("---%d,%d,%d,%d,%d---\r\n",pwm[PWM_CHANNEL_CAMERA],pwm[PWM_CHANNEL_JS_R1],pwm[PWM_CHANNEL_JS_R2],pwm[PWM_CHANNEL_JS_L1],pwm[PWM_CHANNEL_JS_L2]);
+		MSG("---%d,%d,%d,%d,%d---\r\n",pwm[PWM_CHANNEL_CAMERA],pwm[PWM_CHANNEL_JS_R1],pwm[PWM_CHANNEL_JS_R2],pwm[PWM_CHANNEL_JS_L1],pwm[PWM_CHANNEL_JS_L2]);
 		TIM_SetCompare1(TIM5,pwm[PWM_CHANNEL_CAMERA]);
 		if(datalink.hover_state == FALSE)
 		{
