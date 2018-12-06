@@ -19,12 +19,12 @@ STATIC gpio_config_t gpio_config_array[GPIO_SRC_NUM] = {
     {GPIOA, GPIO_Pin_4}, 	//mode set 1
     {GPIOA, GPIO_Pin_5}, 	//mode set 2
     {GPIOB, GPIO_Pin_15}, 	//video	
+
+	{GPIOA, GPIO_Pin_8}, 	//power
 	{GPIOB, GPIO_Pin_5}, 	//return reserve2
 	{GPIOB, GPIO_Pin_6}, 	//return toggle
 	{GPIOB, GPIO_Pin_7}, 	//return reserve1	
 	{GPIOB, GPIO_Pin_8}, 	//return 
-	{GPIOA, GPIO_Pin_8}, 	//power
-
 };
 
 /*----------------------------------------------------------------------------*/
