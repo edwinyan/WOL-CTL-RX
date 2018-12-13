@@ -53,7 +53,7 @@ STATIC void app_rfm_rx_task(void *p_arg)
 
 	(void)p_arg;
 	
-	MSG("Creating Application Tasks: %d\r\n",__FPU_USED);
+	//MSG("Creating Application Tasks: %d\r\n",__FPU_USED);
 
 	while (DEF_TRUE) 
     {   
@@ -111,13 +111,13 @@ STATIC void app_datalink_task(void *p_arg)
 STATIC void app_rssi_task(void *p_arg)
 {
 	OS_ERR      err;
-
+	static uint8_t which=0;
 	(void)p_arg;
 
 	while (DEF_TRUE) 
     {   
-		get_rssi();
-		OSTimeDlyHMSM(0, 0, 1, 0, OS_OPT_TIME_HMSM_STRICT, &err);
+		get_rssi(which++);
+		OSTimeDlyHMSM(0, 0, 0, 500, OS_OPT_TIME_HMSM_STRICT, &err);
     }
 }
 
@@ -216,7 +216,7 @@ STATIC void app_task_start(void *p_arg)
 #ifdef CPU_CFG_INT_DIS_MEAS_EN
     CPU_IntDisMeasMaxCurReset();
 #endif
-    MSG("Creating Application Tasks: %d\r\n",__FPU_USED);
+    //MSG("Creating Application Tasks: %d\r\n",__FPU_USED);
 	OSMutexCreate((OS_MUTEX*	)&FIFO_MUTEX,
 				  (CPU_CHAR*	)"UART FIFO_MUTEX",
 				  (OS_ERR*		)&err);

@@ -130,26 +130,39 @@ void USART_IRQInit(USART_TypeDef* USARTx)
 {
 	if(USARTx == USART1)
 	{
+		//init uart fifo
+		Fifo_Init(&stFiFo1);
+		
 		USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 		BSP_IntVectSet(BSP_INT_ID_USART1, USART1_IRQHandler); //设置串口1的中断向量
 		BSP_IntEn(BSP_INT_ID_USART1);
 	}else if(USARTx == USART2){
+		Fifo_Init(&stFiFo2);
+		
 		USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
 		BSP_IntVectSet(BSP_INT_ID_USART2, USART2_IRQHandler); //设置串口2的中断向量
 		BSP_IntEn(BSP_INT_ID_USART2);
 	}else if(USARTx == USART3){
+		Fifo_Init(&stFiFo3);
+		
 		USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);
 		BSP_IntVectSet(BSP_INT_ID_USART3, USART3_IRQHandler); //设置串口3的中断向量
 		BSP_IntEn(BSP_INT_ID_USART3);
 	}else if(USARTx == UART4){
+		Fifo_Init(&stFiFo4);
+		
 		USART_ITConfig(UART4, USART_IT_RXNE, ENABLE);
 		BSP_IntVectSet(BSP_INT_ID_USART4, USART4_IRQHandler); //设置串口4的中断向量
 		BSP_IntEn(BSP_INT_ID_USART4);
 	}else if(USARTx == UART5){
+		Fifo_Init(&stFiFo5);
+		
 		USART_ITConfig(UART5, USART_IT_RXNE, ENABLE);
 		BSP_IntVectSet(BSP_INT_ID_USART5, USART5_IRQHandler); //设置串口5的中断向量
 		BSP_IntEn(BSP_INT_ID_USART5);
 	}else if(USARTx == USART6){
+		Fifo_Init(&stFiFo6);
+		
 		USART_ITConfig(USART6, USART_IT_RXNE, ENABLE);
 		BSP_IntVectSet(BSP_INT_ID_USART6, USART6_IRQHandler); //设置串口6的中断向量
 		BSP_IntEn(BSP_INT_ID_USART6);
@@ -176,12 +189,12 @@ void uart_drv_init(void)
     
     //serial init
     //Serial_Init(); 
-	Fifo_Init(&stFiFo1);
-	Fifo_Init(&stFiFo2);
-	Fifo_Init(&stFiFo3);
-	Fifo_Init(&stFiFo4);
-	Fifo_Init(&stFiFo5);
-	Fifo_Init(&stFiFo6);
+	//Fifo_Init(&stFiFo1);
+	//Fifo_Init(&stFiFo2);
+	//Fifo_Init(&stFiFo3);
+	//Fifo_Init(&stFiFo4);
+	//Fifo_Init(&stFiFo5);
+	//Fifo_Init(&stFiFo6);
     
     for(src = UART_SRC_START; src < UART_SRC_NUM; src++)
     {
@@ -421,6 +434,24 @@ void uart_drv_dbg_msg(u8 *msg)
 
 	OSMutexPost(&TX_MUTEX,OS_OPT_POST_NONE,&err);
 }
+
+
+void uart_drv_dbg_send(u8 *msg,u32 len)
+{
+	OS_ERR      err;
+	
+	OSMutexPend (&TX_MUTEX,0,OS_OPT_PEND_BLOCKING,0,&err);
+	
+	while(len--)
+	{
+		while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);          
+    		USART_SendData(USART1, *msg );
+		msg ++;
+	}
+
+	OSMutexPost(&TX_MUTEX,OS_OPT_POST_NONE,&err);
+}
+
 
 void uart_drv_data_send(u8 *msg,u32 len)
 {

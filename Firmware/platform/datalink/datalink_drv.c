@@ -7,6 +7,7 @@
 #include "gpio_drv.h"
 #include "led_drv.h"
 #include "pwm_drv.h"
+#include "button_drv.h"
 
 static u8 csq_cmd[]="AT*CSQ?\r\n";
 static u8 pack[16]={0};
@@ -15,9 +16,15 @@ static u8 button_output[13] = {0};
 u8 module_index=0;
 
 #define PWM_DEFAULT_VALUE	2048
+#define RX_HEAD	0xA5
+#define RX_TAIL	0x5A
+
+#define DATALINK1	0
+#define DATALINK2	1
 
 dataLink_t datalink;
 
+extern FIFO_T stFiFo1;
 extern FIFO_T stFiFo3;
 
 enum SystemState systemState;
@@ -49,9 +56,31 @@ void datalink_init(u8 index)
 	systemState = SYSTEM_FLYING;
 }
 
-void get_rssi(void)
+void get_rssi(uint8_t which)
 {
-	uart_drv_data_send(csq_cmd,sizeof(csq_cmd));
+	if(which%2 == 0)
+	{
+		uart_drv_dbg_send(csq_cmd,sizeof(csq_cmd));
+	}else{
+		uart_drv_data_send(csq_cmd,sizeof(csq_cmd));
+	}
+}
+
+u8 getLedStatus(void)
+{
+	u8 ret=0;
+
+	if(button_value_get(BUTTON_SRC_POWER_CTRL1) == 1){
+		ret |= POWER_LED;
+	}else{
+		ret &= ~POWER_LED;
+	}
+	if(button_value_get(BUTTON_SRC_RETURN_LED) == 1){
+		ret |= RETURN_LED;
+	}else{
+		ret &= ~RETURN_LED;
+	}
+	return ret;
 }
 
 void unpackDataLink(void)
@@ -93,12 +122,97 @@ void gpioSetOutput(u8 *gpio,u8 size)
 	}
 }
 
+static u8 rssi1=0;
+static u8 rssi2=0;
+
+static u8 checksenddata(u8 *data,u8 size)
+{
+	u8 ret;
+	u16 sum=0;
+
+	while(size--)
+	{
+		sum += *(data++);
+	}
+
+	ret = sum %256;
+
+	return ret;
+}
+
+void datalink_send(u8 which)
+{
+	u8 send[8]={0};
+	static u8 number=0;
+
+	send[0] = RX_HEAD;
+	send[1] = number++;
+	send[2] = getLedStatus();	//获取led返回状态
+	if(which == 0)
+	{	
+		send[3] = rssi1;
+		send[4] = 0;
+	}else{
+		send[3] = 0;
+		send[4] = rssi2;
+	}
+	send[5] = 0x00;
+	send[6] = checksenddata(send,5);
+	send[7] = RX_TAIL;
+
+	if(which == 1)
+	{
+		uart_drv_data_send(send,8);
+	}else{
+		uart_drv_dbg_send(send,8);
+	}
+}
+
+
+
 bool datalink_received(void)
 {
 	u8 read;
 	u8 position,temp;
 	bool ret= FALSE;
-	u8 csq_value[10]="RSSI=";
+	//static u8 which=0;
+	//u8 csq_value[10]="RSSI=";
+
+	if(Fifo_DataLen(&stFiFo1) >= 18)
+	{
+		if(Fifo_Read(&stFiFo1,&read) == TRUE && read == 0xAA)
+		{
+			for(position=0;position<16;position++)//提取数据段
+			{
+				Fifo_Read(&stFiFo1,&temp);
+				pack[position] = temp;	//接收到完整数据
+				MSG("0x%x,",pack[position]);
+			}
+			//MSG("\r\n");
+			if(Fifo_Read(&stFiFo1,&read) == TRUE && read == 0x55)
+				ret=TRUE;
+		}else if(read == '+'){
+			if(Fifo_Read(&stFiFo1,&read) == TRUE && read == 'C'){
+				if(Fifo_Read(&stFiFo1,&read) == TRUE && read == 'S'){
+					if(Fifo_Read(&stFiFo1,&read) == TRUE && read == 'Q'){
+						if(Fifo_Read(&stFiFo1,&read) == TRUE && read == ':'){
+							//MSG("we got a rssi value\r\n");
+							if(Fifo_Read(&stFiFo1,&read) == TRUE)
+								//csq_value[5] = read;
+								rssi1 = read-'0';	//转化成10进制数
+							if(Fifo_Read(&stFiFo1,&read) == TRUE && read >= '0' && read <= '9'){
+								//csq_value[6] = read;
+								rssi1 = rssi1*10+read-'0';	//转化成10进制数
+							}
+							//send rssi value(RSSI=xx) to transmitter
+							//uart_drv_data_send(csq_value,7);
+							datalink_send(DATALINK1);
+						}
+					}
+				}
+			}
+		}
+	}
 
 	if(Fifo_DataLen(&stFiFo3) >= 18)
 	{
@@ -120,12 +234,15 @@ bool datalink_received(void)
 						if(Fifo_Read(&stFiFo3,&read) == TRUE && read == ':'){
 							//MSG("we got a rssi value\r\n");
 							if(Fifo_Read(&stFiFo3,&read) == TRUE)
-								csq_value[5] = read;
+								//csq_value[5] = read;
+								rssi2 = read-'0';	//转化成10进制数
 							if(Fifo_Read(&stFiFo3,&read) == TRUE && read >= '0' && read <= '9'){
-								csq_value[6] = read;
+								//csq_value[6] = read;
+								rssi2 = rssi2*10+read-'0';	//转化成10进制数
 							}
 							//send rssi value(RSSI=xx) to transmitter
-							uart_drv_data_send(csq_value,7);
+							//uart_drv_data_send(csq_value,7);
+							datalink_send(DATALINK2);
 						}
 					}
 				}

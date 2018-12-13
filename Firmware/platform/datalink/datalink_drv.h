@@ -39,7 +39,7 @@ typedef struct {
 void datalink_init(u8 index);
 void data_unpack(void);
 bool datalink_received(void);
-void get_rssi(void);
+void get_rssi(uint8_t which);
 void datalink_state(void);
 void handler_protected(void);
 
