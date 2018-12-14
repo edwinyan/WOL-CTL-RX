@@ -45,11 +45,18 @@ uart_drv_t uart_drv_array[UART_SRC_NUM] = {
         0,{GPIOA, GPIOA},{GPIO_Pin_9,GPIO_Pin_10}, {GPIO_PinSource9, GPIO_PinSource10},GPIO_AF_USART1,DEF_FALSE
     },
 
-    //uart3 for 433/915 module
+    //uart3 for 4G module1
 	{ 
 		"USART3", USART3,&SerialDevCfg_STM32_USART3, 
 		{SERIAL_BAUDRATE_115200, SERIAL_DATABITS_8, SERIAL_STOPBITS_1, SERIAL_PARITY_NONE, SERIAL_FLOW_CTRL_NONE}, 
 		0,{GPIOB, GPIOB},{GPIO_Pin_10,GPIO_Pin_11}, {GPIO_PinSource10, GPIO_PinSource11},GPIO_AF_USART3,DEF_FALSE
+	},
+
+	//uart6 for 4G module2
+	{ 
+		"USART6", USART6,&SerialDevCfg_STM32_USART6, 
+		{SERIAL_BAUDRATE_115200, SERIAL_DATABITS_8, SERIAL_STOPBITS_1, SERIAL_PARITY_NONE, SERIAL_FLOW_CTRL_NONE}, 
+		0,{GPIOC, GPIOC},{GPIO_Pin_6,GPIO_Pin_7}, {GPIO_PinSource6, GPIO_PinSource7},GPIO_AF_USART6,DEF_FALSE
 	},
 };
 
@@ -60,6 +67,7 @@ void USART1_IRQHandler(void)
 	{
 		USART_ClearITPendingBit(USART1,USART_IT_RXNE);
 		Fifo_Write(&stFiFo1,USART_ReceiveData(USART1));
+		//MSG("uart1 interrupt\r\n");
 		//USART_SendData(USART1, USART_ReceiveData(USART1));      //接收到的数据重新发送到串口   
 	}
 	OSIntExit(); 
@@ -72,6 +80,7 @@ void USART2_IRQHandler(void)
 	{
 		USART_ClearITPendingBit(USART2,USART_IT_RXNE);
 		Fifo_Write(&stFiFo2,USART_ReceiveData(USART2));
+		//MSG("uart2 interrupt\r\n");
 		//USART_SendData(USART1, USART_ReceiveData(USART1));      //接收到的数据重新发送到串口   
 	}
 	OSIntExit(); 
@@ -84,6 +93,7 @@ void USART3_IRQHandler(void)
 	{
 		USART_ClearITPendingBit(USART3,USART_IT_RXNE);
 		Fifo_Write(&stFiFo3,USART_ReceiveData(USART3));
+		//MSG("uart3 interrupt\r\n");
 		//USART_SendData(USART1, USART_ReceiveData(USART1));      //接收到的数据重新发送到串口   
 	}
 	OSIntExit(); 
@@ -96,6 +106,7 @@ void USART4_IRQHandler(void)
 	{
 		USART_ClearITPendingBit(UART4,USART_IT_RXNE);
 		Fifo_Write(&stFiFo4,USART_ReceiveData(UART4));
+		//MSG("uart4 interrupt\r\n");
 		//USART_SendData(USART1, USART_ReceiveData(USART1));      //接收到的数据重新发送到串口   
 	}
 	OSIntExit(); 
@@ -108,6 +119,7 @@ void USART5_IRQHandler(void)
 	{
 		USART_ClearITPendingBit(UART5,USART_IT_RXNE);
 		Fifo_Write(&stFiFo5,USART_ReceiveData(UART5));
+		//MSG("uart5 interrupt\r\n");
 		//USART_SendData(USART1, USART_ReceiveData(USART1));      //接收到的数据重新发送到串口   
 	}
 	OSIntExit(); 
@@ -120,6 +132,7 @@ void USART6_IRQHandler(void)
 	{
 		USART_ClearITPendingBit(USART6,USART_IT_RXNE);
 		Fifo_Write(&stFiFo6,USART_ReceiveData(USART6));
+		//MSG("uart6 interrupt\r\n");
 		//USART_SendData(USART1, USART_ReceiveData(USART1));      //接收到的数据重新发送到串口   
 	}
 	OSIntExit(); 
@@ -174,7 +187,7 @@ void USART_IRQInit(USART_TypeDef* USARTx)
 void uart_drv_init(void)
 {
     uart_src_enum src;
-    SERIAL_ERR     err;
+//    SERIAL_ERR     err;
     uart_drv_t     *uart_drv;
     GPIO_InitTypeDef  GPIO_InitStructure;
 	USART_InitTypeDef USART_InitStructure;
@@ -189,12 +202,6 @@ void uart_drv_init(void)
     
     //serial init
     //Serial_Init(); 
-	//Fifo_Init(&stFiFo1);
-	//Fifo_Init(&stFiFo2);
-	//Fifo_Init(&stFiFo3);
-	//Fifo_Init(&stFiFo4);
-	//Fifo_Init(&stFiFo5);
-	//Fifo_Init(&stFiFo6);
     
     for(src = UART_SRC_START; src < UART_SRC_NUM; src++)
     {
@@ -244,6 +251,7 @@ void uart_drv_init(void)
 			USART_Init(uart_drv->USARTx, &USART_InitStructure); //初始化串口 
 
 			USART_IRQInit(uart_drv->USARTx);
+			//MSG("init %s\r\n",uart_drv->uart_name);
 
 			USART_Cmd(uart_drv->USARTx, ENABLE);				//使能串口
 		#endif
@@ -422,6 +430,8 @@ u8 Fifo_DataLen(pFIFO_T stFiFo)
 void uart_drv_dbg_msg(u8 *msg)
 {
 	OS_ERR      err;
+
+	//uart_drv_t *uart_drv = &uart_drv_array[UART_SRC_DBG];
 	
 	OSMutexPend (&TX_MUTEX,0,OS_OPT_PEND_BLOCKING,0,&err);
 	
@@ -439,6 +449,8 @@ void uart_drv_dbg_msg(u8 *msg)
 void uart_drv_dbg_send(u8 *msg,u32 len)
 {
 	OS_ERR      err;
+
+	//uart_drv_t *uart_drv = &uart_drv_array[UART_SRC_DBG];
 	
 	OSMutexPend (&TX_MUTEX,0,OS_OPT_PEND_BLOCKING,0,&err);
 	
@@ -456,6 +468,8 @@ void uart_drv_dbg_send(u8 *msg,u32 len)
 void uart_drv_data_send(u8 *msg,u32 len)
 {
 	OS_ERR      err;
+
+	//uart_drv_t *uart_drv = &uart_drv_array[UART_SRC_DATA];
 	
 	OSMutexPend (&TX_MUTEX,0,OS_OPT_PEND_BLOCKING,0,&err);
 	
@@ -469,6 +483,23 @@ void uart_drv_data_send(u8 *msg,u32 len)
 	OSMutexPost(&TX_MUTEX,OS_OPT_POST_NONE,&err);
 }
 
+void uart_drv_mavlink_send(u8 *msg,u32 len)
+{
+	OS_ERR      err;
+
+	//uart_drv_t *uart_drv = &uart_drv_array[UART_SRC_MAVLINK];
+	
+	OSMutexPend (&TX_MUTEX,0,OS_OPT_PEND_BLOCKING,0,&err);
+	
+	while(len--)
+	{
+		while(USART_GetFlagStatus(USART6, USART_FLAG_TXE) == RESET);          
+    		USART_SendData(USART6, *msg );
+		msg ++;
+	}
+
+	OSMutexPost(&TX_MUTEX,OS_OPT_POST_NONE,&err);
+}
 
 
 

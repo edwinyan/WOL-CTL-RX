@@ -26,6 +26,7 @@ dataLink_t datalink;
 
 extern FIFO_T stFiFo1;
 extern FIFO_T stFiFo3;
+extern FIFO_T stFiFo6;
 
 enum SystemState systemState;
 
@@ -60,9 +61,9 @@ void get_rssi(uint8_t which)
 {
 	if(which%2 == 0)
 	{
-		uart_drv_dbg_send(csq_cmd,sizeof(csq_cmd));
-	}else{
 		uart_drv_data_send(csq_cmd,sizeof(csq_cmd));
+	}else{
+		uart_drv_mavlink_send(csq_cmd,sizeof(csq_cmd));
 	}
 }
 
@@ -160,11 +161,11 @@ void datalink_send(u8 which)
 	send[6] = checksenddata(send,5);
 	send[7] = RX_TAIL;
 
-	if(which == 1)
+	if(which == 0)
 	{
 		uart_drv_data_send(send,8);
 	}else{
-		uart_drv_dbg_send(send,8);
+		uart_drv_mavlink_send(send,8);
 	}
 }
 
@@ -177,43 +178,7 @@ bool datalink_received(void)
 	bool ret= FALSE;
 	//static u8 which=0;
 	//u8 csq_value[10]="RSSI=";
-
-	if(Fifo_DataLen(&stFiFo1) >= 18)
-	{
-		if(Fifo_Read(&stFiFo1,&read) == TRUE && read == 0xAA)
-		{
-			for(position=0;position<16;position++)//提取数据段
-			{
-				Fifo_Read(&stFiFo1,&temp);
-				pack[position] = temp;	//接收到完整数据
-				MSG("0x%x,",pack[position]);
-			}
-			//MSG("\r\n");
-			if(Fifo_Read(&stFiFo1,&read) == TRUE && read == 0x55)
-				ret=TRUE;
-		}else if(read == '+'){
-			if(Fifo_Read(&stFiFo1,&read) == TRUE && read == 'C'){
-				if(Fifo_Read(&stFiFo1,&read) == TRUE && read == 'S'){
-					if(Fifo_Read(&stFiFo1,&read) == TRUE && read == 'Q'){
-						if(Fifo_Read(&stFiFo1,&read) == TRUE && read == ':'){
-							//MSG("we got a rssi value\r\n");
-							if(Fifo_Read(&stFiFo1,&read) == TRUE)
-								//csq_value[5] = read;
-								rssi1 = read-'0';	//转化成10进制数
-							if(Fifo_Read(&stFiFo1,&read) == TRUE && read >= '0' && read <= '9'){
-								//csq_value[6] = read;
-								rssi1 = rssi1*10+read-'0';	//转化成10进制数
-							}
-							//send rssi value(RSSI=xx) to transmitter
-							//uart_drv_data_send(csq_value,7);
-							datalink_send(DATALINK1);
-						}
-					}
-				}
-			}
-		}
-	}
-
+#if 1
 	if(Fifo_DataLen(&stFiFo3) >= 18)
 	{
 		if(Fifo_Read(&stFiFo3,&read) == TRUE && read == 0xAA)
@@ -235,13 +200,52 @@ bool datalink_received(void)
 							//MSG("we got a rssi value\r\n");
 							if(Fifo_Read(&stFiFo3,&read) == TRUE)
 								//csq_value[5] = read;
-								rssi2 = read-'0';	//转化成10进制数
+								rssi1 = read-'0';	//转化成10进制数
 							if(Fifo_Read(&stFiFo3,&read) == TRUE && read >= '0' && read <= '9'){
+								//csq_value[6] = read;
+								rssi1 = rssi1*10+read-'0';	//转化成10进制数
+							}
+							//send rssi value(RSSI=xx) to transmitter
+							//uart_drv_data_send(csq_value,7);
+							MSG("rssi1=%d\r\n",rssi1);
+							datalink_send(DATALINK1);
+						}
+					}
+				}
+			}
+		}
+	}
+#endif
+#if 1
+	if(Fifo_DataLen(&stFiFo6) >= 18)
+	{
+		if(Fifo_Read(&stFiFo6,&read) == TRUE && read == 0xAA)
+		{
+			for(position=0;position<16;position++)//提取数据段
+			{
+				Fifo_Read(&stFiFo6,&temp);
+				pack[position] = temp;	//接收到完整数据
+				MSG("0x%x,",pack[position]);
+			}
+			//MSG("\r\n");
+			if(Fifo_Read(&stFiFo6,&read) == TRUE && read == 0x55)
+				ret=TRUE;
+		}else if(read == '+'){
+			if(Fifo_Read(&stFiFo6,&read) == TRUE && read == 'C'){
+				if(Fifo_Read(&stFiFo6,&read) == TRUE && read == 'S'){
+					if(Fifo_Read(&stFiFo6,&read) == TRUE && read == 'Q'){
+						if(Fifo_Read(&stFiFo6,&read) == TRUE && read == ':'){
+							//MSG("we got a rssi value\r\n");
+							if(Fifo_Read(&stFiFo6,&read) == TRUE)
+								//csq_value[5] = read;
+								rssi2 = read-'0';	//转化成10进制数
+							if(Fifo_Read(&stFiFo6,&read) == TRUE && read >= '0' && read <= '9'){
 								//csq_value[6] = read;
 								rssi2 = rssi2*10+read-'0';	//转化成10进制数
 							}
 							//send rssi value(RSSI=xx) to transmitter
 							//uart_drv_data_send(csq_value,7);
+							MSG("rssi2=%d\r\n",rssi2);
 							datalink_send(DATALINK2);
 						}
 					}
@@ -249,6 +253,7 @@ bool datalink_received(void)
 			}
 		}
 	}
+#endif
 	return ret;
 }
 

@@ -24,6 +24,7 @@ void uart_drv_dbg_msg(u8 *msg);
 void uart_drv_dbg_send(u8 *msg,u32 len);
 void uart_drv_data_send(u8 *msg, u32 len);
 //u32 uart_drv_data_recv(u8 *buf, u32 len);
+void uart_drv_mavlink_send(u8 *msg,u32 len);
 
 void Fifo_Init(pFIFO_T stFiFo);
 bool Fifo_Write(pFIFO_T stFiFo, u8 dat);

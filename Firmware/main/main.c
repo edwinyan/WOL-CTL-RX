@@ -117,6 +117,7 @@ STATIC void app_rssi_task(void *p_arg)
 	while (DEF_TRUE) 
     {   
 		get_rssi(which++);
+		//MSG("which=%d\r\n",which);
 		OSTimeDlyHMSM(0, 0, 0, 500, OS_OPT_TIME_HMSM_STRICT, &err);
     }
 }
@@ -216,7 +217,7 @@ STATIC void app_task_start(void *p_arg)
 #ifdef CPU_CFG_INT_DIS_MEAS_EN
     CPU_IntDisMeasMaxCurReset();
 #endif
-    //MSG("Creating Application Tasks: %d\r\n",__FPU_USED);
+    MSG("Creating Application Tasks: %d\r\n",__FPU_USED);
 	OSMutexCreate((OS_MUTEX*	)&FIFO_MUTEX,
 				  (CPU_CHAR*	)"UART FIFO_MUTEX",
 				  (OS_ERR*		)&err);
